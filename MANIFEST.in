@@ -1,0 +1,18 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include jude_customization *.css
+recursive-include jude_customization *.csv
+recursive-include jude_customization *.html
+recursive-include jude_customization *.ico
+recursive-include jude_customization *.js
+recursive-include jude_customization *.json
+recursive-include jude_customization *.md
+recursive-include jude_customization *.png
+recursive-include jude_customization *.py
+recursive-include jude_customization *.svg
+recursive-include jude_customization *.txt
+recursive-exclude jude_customization *.pyc
