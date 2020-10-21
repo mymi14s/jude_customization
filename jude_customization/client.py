@@ -40,11 +40,11 @@ def send_leave_application_email(doc, handler=None):
         frappe.enqueue(method=frappe.sendmail, queue='short', timeout=300, **email_args)
     elif doc.workflow_state == "HOD Rejected" or doc.workflow_state == "HR Rejected":
         email_args["recipients"] = [frappe.get_doc("Employee", doc.employee).user_id]
-        email_args["message"] = "<b>Leave Application rejected</b><br>Link: <a href='http://192.168.25.3/desk#Form/Leave%20Application/{1}'>http://192.168.25.3/desk#Form/Leave%20Application/{0}</a>".format(doc.name)
+        email_args["message"] = "<b>Leave Application rejected</b><br>Link: <a href='http://192.168.25.3/desk#Form/Leave%20Application/{0}'>http://192.168.25.3/desk#Form/Leave%20Application/{0}</a>".format(doc.name)
         email_args['subject'] = "Leave Application Rejected"
         frappe.enqueue(method=frappe.sendmail, queue='short', timeout=300, **email_args)
     elif doc.workflow_state == "Approved by HR":
         email_args["recipients"] = [frappe.get_doc("Employee", doc.employee).user_id]
-        email_args["message"] = "<b>Leave Application Approved</b><br>Link: <a href='http://192.168.25.3/desk#Form/Leave%20Application/{1}'>http://192.168.25.3/desk#Form/Leave%20Application/{0}</a>".format(doc.name)
+        email_args["message"] = "<b>Leave Application Approved</b><br>Link: <a href='http://192.168.25.3/desk#Form/Leave%20Application/{0}'>http://192.168.25.3/desk#Form/Leave%20Application/{0}</a>".format(doc.name)
         email_args['subject'] = "Leave Application Approved"
         frappe.enqueue(method=frappe.sendmail, queue='short', timeout=300, **email_args)
