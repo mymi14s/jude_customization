@@ -30,7 +30,7 @@ def send_leave_application_email(doc, handler=None):
         email_args["message"] = "<b>Leave Application</b><br>Employee: {0}<br>Approve/Reject:  <a href='http://192.168.25.3/desk#Form/Leave%20Application/{1}'>http://192.168.25.3/desk#Form/Leave%20Application/{1}</a>".format(doc.employee_name, doc.name)
         email_args['subject'] = "Leave Application for {0}".format(doc.employee_name)
         frappe.enqueue(method=frappe.sendmail, queue='short', timeout=300, **email_args)
-    elif doc.workflow_state == "Pending HR Approval":
+    elif doc.workflow_state == "Pending HR Approval" and doc.status == "Open":
         company = frappe.get_doc('Company', frappe.get_doc('Leave Application', doc.name).company)
         #company_abbr = f"{company.name} - {company.abbr}"
         hrm = frappe.get_doc("Department", f"Human Resources - {company.abbr}").leave_approvers[0].approver
@@ -48,4 +48,3 @@ def send_leave_application_email(doc, handler=None):
         email_args["message"] = "<b>Leave Application Approved</b><br>Link: <a href='http://192.168.25.3/desk#Form/Leave%20Application/{1}'>http://192.168.25.3/desk#Form/Leave%20Application/{0}</a>".format(doc.name)
         email_args['subject'] = "Leave Application Approved"
         frappe.enqueue(method=frappe.sendmail, queue='short', timeout=300, **email_args)
-        
