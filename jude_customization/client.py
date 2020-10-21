@@ -14,3 +14,38 @@ def create_note_from_meeting_notice_board(doc, handler=None):
                 ".format(datetime.strptime(doc.meeting_date, '%Y-%m-%d').strftime('%d-%m-%Y'), datetime.strptime(doc.meeting_time, '%H:%M:%S').strftime('%I:%M%p').lower(), doc.meeting_venue, doc.name)
     newdoc.insert()
     print("dONE CREATING NOTE")
+
+
+def send_leave_application_email(doc, handler=None):
+    # send email based on workflow status
+    email_args = {
+				"recipients": [],
+				"message": "",
+				"subject": '',
+				"reference_doctype": doc.doctype,
+				"reference_name": doc.name
+				}
+    if doc.workflow_state == "Pending HOD Approval":
+        email_args["recipients"] = [doc.leave_approver]
+        email_args["message"] = "<b>Leave Application</b><br>Employee: {0}<br>Approve/Reject:  <a href='http://192.168.25.3/desk#Form/Leave%20Application/{1}'>http://192.168.25.3/desk#Form/Leave%20Application/{1}</a>".format(doc.employee_name, doc.name)
+        email_args['subject'] = "Leave Application for {0}".format(doc.employee_name)
+        frappe.enqueue(method=frappe.sendmail, queue='short', timeout=300, **email_args)
+    elif doc.workflow_state == "Pending HR Approval":
+        company = frappe.get_doc('Company', frappe.get_doc('Leave Application', doc.name).company)
+        #company_abbr = f"{company.name} - {company.abbr}"
+        hrm = frappe.get_doc("Department", f"Human Resources - {company.abbr}").leave_approvers[0].approver
+        email_args["recipients"] = [hrm]
+        email_args["message"] = "<b>Leave Application</b><br>Employee: {0}<br>Approve/Reject:  <a href='http://192.168.25.3/desk#Form/Leave%20Application/{1}'>http://192.168.25.3/desk#Form/Leave%20Application/{1}</a>".format(doc.employee_name, doc.name)
+        email_args['subject'] = "Leave Application for {0}: HR Action".format(doc.employee_name)
+        frappe.enqueue(method=frappe.sendmail, queue='short', timeout=300, **email_args)
+    elif doc.workflow_state == "HOD Rejected" or doc.workflow_state == "HR Rejected":
+        email_args["recipients"] = [frappe.get_doc("Employee", doc.employee).user_id]
+        email_args["message"] = "<b>Leave Application rejected</b><br>Link: <a href='http://192.168.25.3/desk#Form/Leave%20Application/{1}'>http://192.168.25.3/desk#Form/Leave%20Application/{0}</a>".format(doc.name)
+        email_args['subject'] = "Leave Application Rejected"
+        frappe.enqueue(method=frappe.sendmail, queue='short', timeout=300, **email_args)
+    elif doc.workflow_state == "Approved by HR":
+        email_args["recipients"] = [frappe.get_doc("Employee", doc.employee).user_id]
+        email_args["message"] = "<b>Leave Application Approved</b><br>Link: <a href='http://192.168.25.3/desk#Form/Leave%20Application/{1}'>http://192.168.25.3/desk#Form/Leave%20Application/{0}</a>".format(doc.name)
+        email_args['subject'] = "Leave Application Approved"
+        frappe.enqueue(method=frappe.sendmail, queue='short', timeout=300, **email_args)
+        

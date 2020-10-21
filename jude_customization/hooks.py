@@ -89,7 +89,10 @@ doc_events = {
     "HSE Meeting Notice Board":
         {
             "on_submit": "jude_customization.client.create_note_from_meeting_notice_board",
-        }
+        },
+    "Leave Application":{
+        "on_update": "jude_customization.client.send_leave_application_email",
+    }
 }
 
 # Scheduled Tasks
