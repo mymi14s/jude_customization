@@ -89,10 +89,22 @@ doc_events = {
     "HSE Meeting Notice Board":
         {
             "on_submit": "jude_customization.client.create_note_from_meeting_notice_board",
+            "on_cancel": "jude_customization.client.cancel_not_on_cancel_meeting",
+            "on_trash": "jude_customization.client.delete_note_on_delete_hse_meeting",
         },
-    "Leave Application":{
-        "on_update": "jude_customization.client.send_leave_application_email",
-    }
+    "Leave Application":
+        {
+            "on_update": "jude_customization.client.send_leave_application_email",
+        },
+    # "Salary Slip":
+    #     {
+    #         "after_insert": "jude_customization.client.compute_salary_slip_paye",
+    #         # "before_save": "jude_customization.client.compute_salary_slip_paye",
+    #         # "validate": "jude_customization.client.compute_salary_slip_paye",
+    #         "on_update": "jude_customization.client.compute_salary_slip_paye",
+    #         "before_submit": "jude_customization.client.compute_salary_slip_paye",
+    #
+    #     },
 }
 
 # Scheduled Tasks

@@ -1,19 +1,93 @@
 from datetime import datetime
 import frappe
+from frappe import _
 
 def create_note_from_meeting_notice_board(doc, handler=None):
 # create Hse Meeting notice board
     print("CREATING NOTE")
+    print(doc.minutes)
     newdoc = frappe.new_doc("Note")
     newdoc.title = doc.name
     newdoc.public = True
     newdoc.notify_on_login = True
+    newdoc.notify_on_every_login = True
+    newdoc.expire_notification_on = doc.meeting_date
     newdoc.content = "Date: <b>{0}</b><br>Time: <b>{1}</b>\
                 <br>Venue: <b>{2}</b><br>Link : <b><a style='color:red;' \
                 href='http://192.168.25.3/desk#Form/HSE%20Meeting%20Notice%20Board/{3}'> Click here to visit </a></b>\
-                ".format(datetime.strptime(doc.meeting_date, '%Y-%m-%d').strftime('%d-%m-%Y'), datetime.strptime(doc.meeting_time, '%H:%M:%S').strftime('%I:%M%p').lower(), doc.meeting_venue, doc.name)
+                ".format(datetime.strptime(str(doc.meeting_date), '%Y-%m-%d').strftime('%d-%m-%Y'), datetime.strptime(str(doc.meeting_time), '%H:%M:%S').strftime('%I:%M%p').lower(), doc.meeting_venue, doc.name)
     newdoc.insert()
+
+    #  get users email and send mail
+    link = "<br>Attachment : <b><a style='color:red;' href='http://192.168.25.3{0}'> Click here to download </a></b><p></p>".format(doc.minutes) if doc.minutes else "<hr>"
+    emails = [i[0] for i in frappe.db.sql("SELECT email FROM tabUser WHERE email LIKE '%@%';", as_list=True)]
+    email_args = {
+				"recipients": [],
+				"message": "",
+				"subject": '',
+				"reference_doctype": doc.doctype,
+				"reference_name": doc.name
+				}
+    email_args["recipients"] = emails
+    # try:
+    #     email_args['attachments'] = [] #doc.attachments
+    # except Exception as e:
+    #     pass
+    email_args["message"] = "<h3>Notice of HSE Meeting</h3>\
+        \
+        <p>Dear All,</p>\
+            \
+        <p>This is to inform you that the HSE Meeting for {0} {1} will hold as follows:</p>\
+            \
+        <p><b>Date</b>: {2}</p>\
+        <p><b>Time</b>: {3}</p>\
+        <p><b>Venue</b>: {4} </p>\
+            \
+        <h5>Note:</h5>\
+        <p>In line with the Federal Ministry of Health and NCDC Guidelines, our meetings will hold in two segments:</p>\
+        \
+        <p>Engineers, Lab and Warehouse personnel: 1.30pm - 2.30pm</p>\
+        <p>Finance/Accounts, ICT and other support personnel - 2.30pm - 3.30pm</p>\
+            \
+        <p>Attached is the minutes of the last HSE meeting.</p>\
+        <span><b>Attachment</b>: <a href='http://192.168.25.3{5}'>Click here to download</a></span>\
+         \
+        <p>To access or view the full document details, kindly use the URL link below.</p>\
+        <br>Link : <b><a style='color:red;' \
+        href='http://192.168.25.3/desk#Form/HSE%20Meeting%20Notice%20Board/{6}'> Click here to visit </a></b>\
+        <p>Best Regards,</p>\
+            \
+        <p>Chinenye Chukwuemeka</p\
+        <p><b>QA/HSE Officer</b></p>".format(
+            doc.month, doc.year, datetime.strptime(str(doc.meeting_date), '%Y-%m-%d').strftime('%d-%m-%Y'), datetime.strptime(str(doc.meeting_time), '%H:%M:%S').strftime('%I:%M%p').lower(),
+            doc.meeting_venue, link, doc.name)
+    email_args['subject'] = "HSE Meeting Notification"
+    frappe.enqueue(method=frappe.sendmail, queue='short', timeout=300, **email_args)
+    # redirect
+    # frappe.local.flags.redirect_location = '/desk#Form/HSE%20Meeting%20Notice%20Board/{0}'.format(doc.name)
+    # raise frappe.Redirect
     print("dONE CREATING NOTE")
+
+def delete_note_on_delete_hse_meeting(doc, event):
+    try:
+        note = frappe.get_doc("Note", doc.name)
+        notename = note.name
+        note.delete()
+        # frappe.msgprint("Note: {0}, has been deleted/".format(notename))
+    except Exception as e:
+        pass
+
+def cancel_not_on_cancel_meeting(doc, event):
+    try:
+        note = frappe.get_doc("Note", doc.name)
+        note.public = False
+        note.notify_on_login = False
+        note.notify_on_every_login = False
+        note.expire_notification_on = datetime.today().strftime('%Y-%m-%d')
+        note.save()
+        # frappe.msgprint("Note: {0}, has been deleted/".format(notename))
+    except Exception as e:
+        pass
 
 
 def send_leave_application_email(doc, handler=None):
@@ -48,3 +122,110 @@ def send_leave_application_email(doc, handler=None):
         email_args["message"] = "<b>Leave Application Approved</b><br>Link: <a href='http://192.168.25.3/desk#Form/Leave%20Application/{0}'>http://192.168.25.3/desk#Form/Leave%20Application/{0}</a>".format(doc.name)
         email_args['subject'] = "Leave Application Approved"
         frappe.enqueue(method=frappe.sendmail, queue='short', timeout=300, **email_args)
+
+
+def compute_salary_slip_paye(doc, event):
+    # frappe.msgprint(_(event))
+    # for i in doc.earnings:
+    #     print(i.name, i.salary_component, i.abbr)
+    annual_gross_pay = doc.gross_pay * 12
+    annual_pension = sum([i.amount for i in doc.earnings if i.salary_component.upper() in ["BASIC SALARY", "HOUSING ALLOWANCE", 'TRANSPORT ALLOWANCE']]) * 12
+    annual_pension_08 = annual_pension * 0.08
+    if((annual_gross_pay * 0.01) > 200000):consolidated_relief_allowance=(annual_gross_pay * 0.2) + (annual_gross_pay * 0.01)
+    else:consolidated_relief_allowance=(annual_gross_pay * 0.2 + (200000))
+
+    # other reliefs
+    other_reliefs = sum([i.amount for i in doc.earnings if i.abbr.upper() in ["NHF", "NHIS"]]) * 12
+    non_taxable_annual = consolidated_relief_allowance + annual_pension_08 + other_reliefs
+    taxable_annual = annual_gross_pay - non_taxable_annual
+
+    def tax_band_calculator(taxable):
+        band_list = [
+            {'amount':300000, 'per':0.07},
+            {'amount':300000, 'per':0.11},
+            {'amount':500000, 'per':0.15},
+            {'amount':500000, 'per':0.19},
+            {'amount':1600000, 'per':0.21},
+            # {'amount':3200000, 'per':0.0},
+        ]
+        tax_to_pay = 0
+        if(taxable>3200000):tax_to_pay=((taxable-3200000)*0.24) + 560000
+        else:
+            taxable_copy = taxable
+            for i, val in enumerate(band_list):
+                if((taxable_copy<val['amount']) and taxable_copy>0):
+                    tax_to_pay += taxable_copy * val['per']
+                    break
+                elif(taxable_copy<0):
+                    break
+                else:
+                    taxable_copy -= val['amount']
+                    tax_to_pay += val['amount'] * val['per']
+                    # if(taxable_copy<0):
+                    #     break
+        return tax_to_pay
+
+    # get taxable_annual
+    tax_to_pay_annually = tax_band_calculator(taxable_annual)
+    if((tax_to_pay_annually/12)<(0.01*doc.gross_pay)):tax_to_pay_monthly=0.01*doc.gross_pay
+    else:tax_to_pay_monthly = tax_to_pay_annually/12
+
+    # create new PAYE
+    # check PAYE
+    checker = False
+    doc_total_deductions = 0
+    for i in doc.deductions:
+        if i.salary_component == "PAYE Tax":
+            checker = True
+            i.amount = tax_to_pay_monthly
+            i.default_amount = tax_to_pay_monthly
+            # doc.save()
+    if checker:
+        doc.total_deduction = ((annual_pension/12)/12) + tax_to_pay_monthly
+        doc.net_pay = doc.gross_pay - doc.total_deduction
+        doc.rounded_total = round(doc.net_pay, 2)
+        doc.total_in_words = frappe.utils.money_in_words(doc.rounded_total)
+
+    # create new Salary Componetnt
+    # if not checker:
+    #     doc.append('deductions', {
+    #         'abbr': 'PAYE',
+    # 		'amount' : tax_to_pay_monthly,
+    #         'salary_component' : 'PAYE Tax'
+    # 	})
+        # doc.save()
+        # frappe.db.commit()
+    # doc.save()
+    # doc.reload()
+    # return doc
+    if not checker:
+        newdoc = frappe.new_doc("Salary Detail")
+        newdoc.parent = doc.name
+        newdoc.parenttype = 'Salary Slip'
+        newdoc.parentfield = 'deductions'
+        newdoc.salary_component = 'PAYE Tax'
+        newdoc.abbr = 'PAYE'
+        newdoc.amount = tax_to_pay_monthly
+        newdoc.insert(ignore_permissions=True)
+        # print(newdoc.amount)
+        doc.reload()
+
+        # return newdoc
+    # return doc
+            # if(str(event)=="after_insert"):
+            #     doc.reload()
+            # doc.total_deduction = ((annual_pension/12)/12) + tax_to_pay_monthly
+            # doc.net_pay = doc.gross_pay - doc.total_deduction
+            # doc.rounded_total = round(doc.net_pay, 2)
+            # doc.total_in_words = frappe.utils.money_in_words(doc.rounded_total)
+            # doc.save()
+    # check_paye = frappe.get_doc("Salary detail", frappe.get_doc("Salary Com"))
+    # check_paye = frappe.db.sql("""SELECT parent, parentfield, parenttype, salary_component FROM `tabSalary Detail` WHERE parent='{0}' AND salary_component='{1}' AND parentfield='{2}';""".format(
+    # doc.name, 'PAYE Tax', 'deductions'))
+    # print(check_paye)
+
+    # consolidated_relief_allowance = (annual_gross_pay * 0.2 + (200000)) + (annual_gross_pay * 0.01) if (annual_gross_pay * 0.01) > 200000 or (annual_gross_pay * 0.2 + (200000))
+    # print("GI: {0}, AP: {1}".format(annual_gross_pay, annual_pension), "\n\n\n\n\n")
+    # frappe.throw(_("GI: {0}, AP: {1}\nCRA: {2}, nta {3}\nTaxable {4}, Tax Year: {5}\nTax month {6}".format(
+        # annual_gross_pay, annual_pension_08, consolidated_relief_allowance, non_taxable_annual,
+        # taxable_annual, tax_to_pay_annually, tax_to_pay_monthly)))
