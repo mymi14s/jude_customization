@@ -19,7 +19,7 @@ def create_note_from_meeting_notice_board(doc, handler=None):
     newdoc.insert()
 
     #  get users email and send mail
-    link = "<br>Attachment : <b><a style='color:red;' href='http://192.168.25.3{0}'> Click here to download </a></b><p></p>".format(doc.minutes) if doc.minutes else "<hr>"
+    link = "<p>Attached is the minutes of the last HSE meeting.</p><br>Attachment : <b><a style='color:red;' href='http://192.168.25.3"+doc.minutes+"'> Click here to download </a></b><p></p>" if doc.minutes else "<hr>"
     emails = [i[0] for i in frappe.db.sql("SELECT email FROM tabUser WHERE email LIKE '%@%';", as_list=True)]
     email_args = {
 				"recipients": [],
@@ -48,10 +48,8 @@ def create_note_from_meeting_notice_board(doc, handler=None):
         \
         <p>Engineers, Lab and Warehouse personnel: 1.30pm - 2.30pm</p>\
         <p>Finance/Accounts, ICT and other support personnel - 2.30pm - 3.30pm</p>\
-            \
-        <p>Attached is the minutes of the last HSE meeting.</p>\
-        <span><b>Attachment</b>: <a href='http://192.168.25.3{5}'>Click here to download</a></span>\
-         \
+        {5}\
+        \
         <p>To access or view the full document details, kindly use the URL link below.</p>\
         <br>Link : <b><a style='color:red;' href='http://192.168.25.3/desk#Form/HSE%20Meeting%20Notice%20Board/{6}'> Click here to visit </a></b>\
         <p>Best Regards,</p>\
