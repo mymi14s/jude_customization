@@ -53,8 +53,7 @@ def create_note_from_meeting_notice_board(doc, handler=None):
         <span><b>Attachment</b>: <a href='http://192.168.25.3{5}'>Click here to download</a></span>\
          \
         <p>To access or view the full document details, kindly use the URL link below.</p>\
-        <br>Link : <b><a style='color:red;' \
-        href='http://192.168.25.3/desk#Form/HSE%20Meeting%20Notice%20Board/{6}'> Click here to visit </a></b>\
+        <br>Link : <b><a style='color:red;' href='http://192.168.25.3/desk#Form/HSE%20Meeting%20Notice%20Board/{6}'> Click here to visit </a></b>\
         <p>Best Regards,</p>\
             \
         <p>Chinenye Chukwuemeka</p\
