@@ -88,6 +88,8 @@ doc_events = {
 
     "HSE Meeting Notice Board":
         {
+            "before_insert": "jude_customization.client.copy_minute_to_public",
+            "on_update": "jude_customization.client.copy_minute_to_public",
             "on_submit": "jude_customization.client.create_note_from_meeting_notice_board",
             "on_cancel": "jude_customization.client.cancel_not_on_cancel_meeting",
             "on_trash": "jude_customization.client.delete_note_on_delete_hse_meeting",

@@ -1,6 +1,8 @@
 from datetime import datetime
+import subprocess
 import frappe
 from frappe import _
+from .utils import get_system_site_name
 
 def create_note_from_meeting_notice_board(doc, handler=None):
 # create Hse Meeting notice board
@@ -85,6 +87,22 @@ def cancel_not_on_cancel_meeting(doc, event):
         # frappe.msgprint("Note: {0}, has been deleted/".format(notename))
     except Exception as e:
         pass
+
+def copy_minute_to_public(doc, event):
+    if (event == "before_insert" or event == "on_update"):
+        print(event)
+        site_name = get_system_site_name()
+        if doc.minutes:
+            print(doc.minutes)
+            file_name_list = str(doc.minutes).split('/')
+            print(file_name_list)
+            if 'private' in file_name_list:
+                full_path = site_name + doc.minutes
+                subprocess.call(["mv", "{0}".format(full_path), "{0}/public/files".format(site_name)])
+                doc.minutes = doc.minutes.replace("/private", '')
+                print(doc.minutes, "/n/n/n/n/n/n")
+
+
 
 
 def send_leave_application_email(doc, handler=None):
