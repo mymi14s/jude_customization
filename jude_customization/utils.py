@@ -1,5 +1,5 @@
 from __future__ import unicode_literals
-import os, pathlib
+import os
 import json
 import base64
 import frappe
