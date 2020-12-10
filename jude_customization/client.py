@@ -122,7 +122,7 @@ def send_leave_application_email(doc, handler=None):
     elif doc.workflow_state == "Pending HR Approval" and doc.status == "Open":
         company = frappe.get_doc('Company', frappe.get_doc('Leave Application', doc.name).company)
         #company_abbr = f"{company.name} - {company.abbr}"
-        hrm = frappe.get_doc("Department", "Human Resources - {0}".format(company.abbr)).leave_approvers[0].approver
+        hrm = frappe.get_doc("Department", "Administration/Human Resources/Corporate Services - {0}".format(company.abbr)).leave_approvers[0].approver
         email_args["recipients"] = [hrm]
         email_args["message"] = "<b>Leave Application</b><br>Employee: {0}<br>Approve/Reject:  <a href='http://41.73.226.7/desk#Form/Leave%20Application/{1}'>http://41.73.226.7/desk#Form/Leave%20Application/{1}</a>".format(doc.employee_name, doc.name)
         email_args['subject'] = "Leave Application for {0}: HR Action".format(doc.employee_name)
