@@ -21,7 +21,9 @@ def create_note_from_meeting_notice_board(doc, handler=None):
     newdoc.insert()
 
     #  get users email and send mail
-    link = "<p>Attached is the minutes of the last HSE meeting.</p><br>Attachment : <b><a style='color:red;' href='http://41.73.226.7"+doc.minutes+"'> Click here to download </a></b><p></p>" if doc.minutes else "<hr>"
+    # link = "<p>Attached is the minutes of the last HSE meeting.</p><br>Attachment : <b><a style='color:red;' href='http://41.73.226.7"+doc.minutes+"'> Click here to download </a></b><p></p>" if doc.minutes else "<hr>"
+    download = "<a style='color:red;' href='http://41.73.226.7"+doc.minutes+"'> download </a></b><p></p>" if doc.minutes else "<hr>"
+    link = "<a style='color:red;' href='http://41.73.226.7/desk#Form/HSE%20Meeting%20Notice%20Board/"+doc.name+"'> visit </a>"
     emails = [i[0] for i in frappe.db.sql("SELECT email FROM tabUser WHERE email LIKE '%@%';", as_list=True)]
     email_args = {
 				"recipients": [],
@@ -35,31 +37,10 @@ def create_note_from_meeting_notice_board(doc, handler=None):
     #     email_args['attachments'] = [] #doc.attachments
     # except Exception as e:
     #     pass
-    email_args["message"] = "<h3>Notice of HSE Meeting</h3>\
-        \
-        <p>Dear All,</p>\
-            \
-        <p>This is to inform you that the HSE Meeting for {0} {1} will hold as follows:</p>\
-            \
-        <p><b>Date</b>: {2}</p>\
-        <p><b>Time</b>: {3}</p>\
-        <p><b>Venue</b>: {4} </p>\
-            \
-        <h5>Note:</h5>\
-        <p>In line with the Federal Ministry of Health and NCDC Guidelines, our meetings will hold in two segments:</p>\
-        \
-        <p>Engineers, Lab and Warehouse personnel: 1.30pm - 2.30pm</p>\
-        <p>Finance/Accounts, ICT and other support personnel - 2.30pm - 3.30pm</p>\
-        {5}\
-        \
-        <p>To access or view the full document details, kindly use the URL link below.</p>\
-        <br>Link : <b><a style='color:red;' href='http://41.73.226.7/desk#Form/HSE%20Meeting%20Notice%20Board/{6}'> Click here to visit </a></b>\
-        <p>Best Regards,</p>\
-            \
-        <p>Chinenye Chukwuemeka</p\
-        <p><b>QA/HSE Officer</b></p>".format(
-            doc.month, doc.year, datetime.strptime(str(doc.meeting_date), '%Y-%m-%d').strftime('%d-%m-%Y'), datetime.strptime(str(doc.meeting_time), '%H:%M:%S').strftime('%I:%M%p').lower(),
-            doc.meeting_venue, link, doc.name)
+    meeting_msg = frappe.get_doc("Meeting Notice Setup").meeting_message
+    email_args["message"] = meeting_msg.format(
+            month=doc.month, year=doc.year, date=datetime.strptime(str(doc.meeting_date), '%Y-%m-%d').strftime('%d-%m-%Y'), time=datetime.strptime(str(doc.meeting_time), '%H:%M:%S').strftime('%I:%M%p').lower(),
+            meeting_venue=doc.meeting_venue, download=download, docname=doc.name, here=link)
     email_args['subject'] = "HSE Meeting Notification"
     frappe.enqueue(method=frappe.sendmail, queue='short', timeout=300, **email_args)
     # redirect
